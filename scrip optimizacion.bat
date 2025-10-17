@@ -11,7 +11,65 @@ if %errorlevel% neq 0 (
 )
 :: Admin privileges confirmed, continue execution
 setlocal EnableExtensions DisableDelayedExpansion
-echo -- Clearing Browser History
+echo.
+echo ============================================================
+echo Habilitando menu clasico de windows
+echo ============================================================
+echo.
+reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve
+echo.
+echo ============================================================
+echo Aplicando tema obscuro a Windows y aplicaciones
+echo ============================================================
+echo.
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v ColorPrevalence /t REG_DWORD /d 1 /f
+echo.
+echo ============================================================
+echo Habilitando visualizador de imagenes nativo de Windows
+echo ============================================================
+echo.
+rem Determinar ubicación de PhotoViewer.dll
+set "PV=%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll"
+if not exist "%PV%" set "PV=%ProgramFiles(x86)%\Windows Photo Viewer\PhotoViewer.dll"
+
+if not exist "%PV%" (
+    echo No se encontro PhotoViewer.dll. Windows Photo Viewer puede no estar presente.
+) else (
+    rem Registrar comando de apertura
+    reg add "HKCR\PhotoViewer.FileAssoc.Image\shell\open\command" /ve /d "rundll32.exe \"%PV%\", ImageView_Fullscreen %%1" /f
+
+    rem Registrar ProgID (opcional, para compatibilidad)
+    reg add "HKCR\PhotoViewer.FileAssoc.Image" /f
+
+    rem Asociar extensiones al ProgID
+    assoc .jpg=PhotoViewer.FileAssoc.Image
+    assoc .jpeg=PhotoViewer.FileAssoc.Image
+    assoc .png=PhotoViewer.FileAssoc.Image
+    assoc .bmp=PhotoViewer.FileAssoc.Image
+    assoc .gif=PhotoViewer.FileAssoc.Image
+    assoc .tif=PhotoViewer.FileAssoc.Image
+    assoc .tiff=PhotoViewer.FileAssoc.Image
+    assoc .ico=PhotoViewer.FileAssoc.Image
+
+    rem Asegurar ftype con el comando correcto
+    ftype PhotoViewer.FileAssoc.Image="rundll32.exe \"%PV%\", ImageView_Fullscreen %1"
+
+    echo.
+    echo ============================================================
+    echo El vizualizador de imagenes nativo de Windows ha sido habilitado.
+    echo ============================================================
+    echo.
+    ::rem Refrescar el Explorador para aplicar cambios
+    ::taskkill /f /im explorer.exe >nul 2>&1
+    ::start explorer.exe
+)
+echo.
+echo ============================================================
+echo Limpiando archivos temporales y cache de navegadores
+echo ============================================================
+echo.
 del /q /s "%LocalAppData%\Google\Chrome\User Data\Default\Cache\*.*"
 del /q /s "%LocalAppData%\Microsoft\Edge\User Data\Default\Cache\*.*"
 del /q /s "%APPDATA%\Mozilla\Firefox\Profiles\*.default\places.sqlite"
@@ -352,56 +410,145 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" /v "DisableWebBro
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" /v "DisableWindowsSettingSync" /t REG_DWORD /d 2 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" /v "DisableWindowsSettingSyncUserOverride" /t REG_DWORD /d 1 /f
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\SettingSync\Groups\Language" /t REG_DWORD /v "Enabled" /d 0 /f
-echo -- Disabling Xbox Screen Recording
+echo.
+echo ============================================================
+echo Deshabilitando Grabacion de pantalla de Xbox
+echo ============================================================
+echo.
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f
-echo -- Disabling Auto Map Downloads
+echo.
+echo ============================================================
+echo Deshabilitando Mapas y Localizacion
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Maps" /v "AllowUntriggeredNetworkTrafficOnSettingsPage" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Maps" /v "AutoDownloadAndUpdateMapData" /t REG_DWORD /d 0 /f
-echo -- Disabling Activity Feed
+echo.
+echo ============================================================
+echo Deshabilitando Feed de Actividad
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableActivityFeed" /d "0" /t REG_DWORD /f
-
-echo -- Disabling Biometrics (Breaks Windows Hello)
+echo.
+echo ============================================================
+echo Deshabilitando Funciones Biometricas
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Biometrics" /v "Enabled" /t REG_DWORD /d "0" /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Biometrics\Credential Provider" /v "Enabled" /t "REG_DWORD" /d "0" /f
-echo -- Disabling Voice Activation access
+echo.
+echo ============================================================
+echo Deshabilitando Activacion por Voz
+echo ============================================================
+echo.
 reg add "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v "AgentActivationEnabled" /t REG_DWORD /d 0 /f
-echo -- Disabling Account Information access
+echo.
+echo ============================================================
+echo Deshabilitando Acceso a Informacion de la Cuenta
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation" /v "Value" /d "Deny" /f
-echo -- Disabling Call History access
+echo.
+echo ============================================================
+echo Deshabilitando Acceso a historial de llamadas
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCallHistory" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling Motion access
+echo.
+echo ============================================================
+echo Deshabilitando Acceso a Accesos de movimiento
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\activity" /v "Value" /d "Deny" /f
-echo -- Disabling Trusted Devices access
+echo.
+echo ============================================================
+echo Deshabilitando configuracion de de acceso a dispositivos confiables
+echo ============================================================
+echo.
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\DeviceAccess\Global\{C1D23ACC-752B-43E5-8448-8D0E519CD6D6}" /t REG_SZ /v "Value" /d "Deny" /f
-echo -- Disabling Contacts access
+echo.
+echo ============================================================
+echo Deshabilitando Contactos de acceso
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\contacts" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling Email access
+echo.
+echo ============================================================
+echo Deshabilitando Acceso a Correo
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling Tasks access
+echo.
+echo ============================================================
+echo Deshabilitando Acceso a Tareas
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userDataTasks" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling Radio access
+echo.
+echo ============================================================
+echo Deshabilitando Acceso a Radio
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\radios" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling System files access
+echo.
+echo ============================================================
+echo Deshabilitando Acceso a archivos del sistema
+echo ============================================================
+echo.
 reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary" /v "Value" /d "Deny" /t REG_SZ /f
 reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary" /v "Value" /d "Deny" /t REG_SZ /f
 reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary" /v "Value" /d "Deny" /t REG_SZ /f
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Deleting Temp files
+echo.
+echo ============================================================
+echo Eliminando archivos temporales
+echo ============================================================
+echo.
 del /s /f /q c:\windows\temp\*.*
 del /s /f /q C:\WINDOWS\Prefetch
-echo -- Set Ultimate Performance Power Plan
+echo.
+echo ============================================================
+echo Habilitando Plan de Energia Ultimo Rendimiento
+echo ============================================================
+echo.
 powershell -command "$ultimatePerformance = powercfg -list | Select-String -Pattern 'Ultimate Performance'; if ($ultimatePerformance) { echo '-- - Power plan already exists' } else { echo '-- - Enabling Ultimate Performance'; $output = powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>&1; if ($output -match 'Unable to create a new power scheme' -or $output -match 'The power scheme, subgroup or setting specified does not exist') { powercfg -RestoreDefaultSchemes } }"
 powershell -command "$ultimatePlanGUID = (powercfg -list | Select-String -Pattern 'Ultimate Performance').Line.Split()[3]; echo '-- - Activating Ultimate Performance'; powercfg -setactive $ultimatePlanGUID"
-echo -- Limiting Windows Defender Usage
+powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+powershell -Command "if ((powercfg -list) -match 'High performance') { $g=(powercfg -list | Select-String 'High performance').Line.Split()[3]; powercfg -setactive $g }"
+powercfg /change monitor-timeout-ac 0
+powercfg /change monitor-timeout-dc 0
+powercfg /change standby-timeout-ac 0
+powercfg /change standby-timeout-dc 0
+echo.
+echo ============================================================
+echo Limitando uso de CPU de Windows Defender y deshabilitando funciones innecesarias
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Scan" /v "AvgCPULoadFactor" /t REG_DWORD /d "25" /f
-echo -- Disabling Core Isolation
+echo.
+echo ============================================================
+echo Deshabilitando aislamiento de nucleo (Core Isolation)
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\CurrentControlSet\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" /v "Enabled" /t REG_DWORD /d 0 /f
-echo -- Disabling Windows Search
+echo.
+echo ============================================================
+echo Deshabilitando Busqueda de Windows
+echo ============================================================
+echo.
 sc stop "wsearch" && sc config "wsearch" start=disabled
-echo -- Disabling Hibernation
+echo.
+echo ============================================================
+echo Deshabilitando Hibernacion
+echo ============================================================
+echo.
 powercfg.exe /hibernate off
-echo -- Uninstalling Xbox
+echo.
+echo ============================================================
+echo Desinstalando Xbox
+echo ============================================================
+echo.
 PowerShell -ExecutionPolicy Unrestricted -Command "Get-AppxPackage "Microsoft.XboxApp" | Remove-AppxPackage"
 PowerShell -ExecutionPolicy Unrestricted -Command "Get-AppxPackage "Microsoft.Xbox.TCUI" | Remove-AppxPackage"
 PowerShell -ExecutionPolicy Unrestricted -Command "Get-AppxPackage "Microsoft.XboxGamingOverlay" | Remove-AppxPackage"
@@ -418,9 +565,17 @@ sc config XblAuthManager start=disabled
 sc config XblGameSave start=disabled
 sc config XboxGipSvc start=disabled
 sc config XboxNetApiSvc start=disabled
-echo -- Uninstalling Microsoft Store
+echo.
+echo ============================================================
+echo Desinstalando microsoft Store
+echo ============================================================
+echo.
 PowerShell -ExecutionPolicy Unrestricted -Command "Get-AppxPackage "*Microsoft.WindowsStore*" | Remove-AppxPackage"
-echo -- Killing OneDrive Process
+echo.
+echo ============================================================
+echo  Desinstalando OneDrive y restaurando carpetas por defecto
+echo ============================================================
+echo.
 taskkill /f /im OneDrive.exe
 if exist "%SystemRoot%\System32\OneDriveSetup.exe" (
     echo -- Uninstalling OneDrive through the installers
@@ -429,23 +584,47 @@ if exist "%SystemRoot%\System32\OneDriveSetup.exe" (
 if exist "%SystemRoot%\SysWOW64\OneDriveSetup.exe" (
     "%SystemRoot%\SysWOW64\OneDriveSetup.exe" /uninstall
 )
-echo -- Copy OneDrive files to local folders
+echo.
+echo ============================================================
+echo copiando archivos de onedrive a carpeta usuario
+echo ============================================================
+echo.
 robocopy "%USERPROFILE%\OneDrive" "%USERPROFILE%" /mov /e /xj /ndl /nfl /njh /njs /nc /ns /np
-echo -- Remove OneDrive from explorer sidebar
+echo.
+echo ============================================================
+echo Removiendo OneDrive del explorador de archivos
+echo ============================================================
+echo.
 reg delete "HKEY_CLASSES_ROOT\WOW6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /f
 reg delete "HKEY_CLASSES_ROOT\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /f
-echo -- Removing shortcut entry
+echo.
+echo ============================================================
+echo Removiendo acceso directo de OneDrive del menu inicio
+echo ============================================================
+echo.
 del "%appdata%\Microsoft\Windows\Start Menu\Programs\OneDrive.lnk"
-echo -- Removing scheduled task
+echo.
+echo ============================================================
+echo Removiendo tareas programadas de OneDrive
+echo ============================================================
+echo.
 powershell -Command "Get-ScheduledTask -TaskPath '\' -TaskName 'OneDrive*' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false"
-echo -- Removing OneDrive leftovers
+echo.
+echo ============================================================
+echo Removiendo carpetas de registro de OneDrive
+echo ============================================================
+echo.
 rd "%UserProfile%\OneDrive" /Q /S
 rd "%LocalAppData%\OneDrive" /Q /S
 rd "%LocalAppData%\Microsoft\OneDrive" /Q /S
 rd "%ProgramData%\Microsoft OneDrive" /Q /S
 rd "C:\OneDriveTemp" /Q /S
 reg delete "HKEY_CURRENT_USER\Software\Microsoft\OneDrive" /f
-echo -- Restore default folders locations
+echo.
+echo ============================================================
+echo restaurando carpetas por defecto
+echo ============================================================
+echo.
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" /v "AppData" /t REG_EXPAND_SZ /d "%USERPROFILE%\AppData\Roaming" /f
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" /v "Cache" /t REG_EXPAND_SZ /d "%USERPROFILE%\AppData\Local\Microsoft\Windows\INetCache" /f
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" /v "Cookies" /t REG_EXPAND_SZ /d "%USERPROFILE%\AppData\Local\Microsoft\Windows\INetCookies" /f
@@ -468,25 +647,41 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Fold
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" /v "Personal" /t REG_EXPAND_SZ /d "%USERPROFILE%\Documents" /f
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" /v "{F42EE2D3-909F-4907-8871-4C22FC0BF756}" /t REG_EXPAND_SZ /d "%USERPROFILE%\Documents" /f
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" /v "{0DDD015D-B06C-45D5-8C4C-F59713854639}" /t REG_EXPAND_SZ /d "%USERPROFILE%\Pictures" /f
-echo -- Uninstalling Widgets
+echo.
+echo ============================================================
+echo Desinstalando Widgets
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t "REG_DWORD" /d "0" /f
 PowerShell -ExecutionPolicy Unrestricted -Command "Get-AppxPackage *WebExperience* | Remove-AppxPackage"
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\MicrosoftWindows.Client.WebExperience_cw5n1h2txyewy" /f
-echo -- Disabling Windows Update Telemetry
+echo.
+echo ============================================================
+echo Deshabilitando Telemetria de Windows Update
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v "DODownloadMode" /t "REG_DWORD" /d 0 /f
-echo -- Disabling Clipboard history and Cloud Clipboard
-reg add "HKCU\Software\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f
-reg add "HKCU\Software\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f
-reg add "HKCU\Software\Policies\Microsoft\Windows\HandwritingErrorReports" /v "PreventHandwritingErrorReports" /t REG_DWORD /d 1 /f
-reg add "HKLM\Software\Policies\Microsoft\Windows\HandwritingErrorReports" /v "PreventHandwritingErrorReports" /t REG_DWORD /d 1 /f
-reg add "HKCU\Software\Policies\Microsoft\Windows\TabletPC" /v "PreventHandwritingDataSharing" /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\TabletPC" /v "PreventHandwritingDataSharing" /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization" /v "AllowInputPersonalization" /t REG_DWORD /d 0 /f
-reg add "HKCU\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" /v "HarvestContacts" /t REG_DWORD /d 0 /f
-echo -- Disabling Adobe Telemetry
+::echo.
+::echo ============================================================
+::echo Deshabilitando Historial del portapapeles y portapapeles en la nube
+::echo ============================================================
+::echo.
+::reg add "HKCU\Software\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f
+::reg add "HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f
+::reg add "HKCU\Software\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f
+::reg add "HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f
+::reg add "HKCU\Software\Policies\Microsoft\Windows\HandwritingErrorReports" /v "PreventHandwritingErrorReports" /t REG_DWORD /d 1 /f
+::reg add "HKLM\Software\Policies\Microsoft\Windows\HandwritingErrorReports" /v "PreventHandwritingErrorReports" /t REG_DWORD /d 1 /f
+::reg add "HKCU\Software\Policies\Microsoft\Windows\TabletPC" /v "PreventHandwritingDataSharing" /t REG_DWORD /d 1 /f
+::reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\TabletPC" /v "PreventHandwritingDataSharing" /t REG_DWORD /d 1 /f
+::reg add "HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization" /v "AllowInputPersonalization" /t REG_DWORD /d 0 /f
+::reg add "HKCU\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" /v "HarvestContacts" /t REG_DWORD /d 0 /f
+echo.
+echo ============================================================
+echo Deshabilitando Telemetria de Adobe
+echo ============================================================
+echo.
 set "hostspath=%windir%\System32\drivers\etc\hosts"
 set "downloadedlist=%temp%\list.txt"
 echo -- Downloading the list of host entries
@@ -495,10 +690,18 @@ if not exist "%downloadedlist%" (
     echo Failed to download the list from the specified URL.
     exit /b 1
 )
-echo -- Adobe block entries successfully added to hosts file
+echo.
+echo ============================================================
+echo Las entradas de bloque de Adobe se agregaron correctamente al archivo de hosts
+echo ============================================================
+echo.
 type "%downloadedlist%" >> "%hostspath%"
 del "%downloadedlist%"
-echo -- Disabling NVIDIA telemetry
+echo.
+echo ============================================================
+echo Deshabilitando Telemetria de NVIDIA
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" /v "OptInOrOutPreference" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\FTS" /v "EnableRID44231" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\FTS" /v "EnableRID64640" /t REG_DWORD /d 0 /f
@@ -507,7 +710,11 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup" /v "Sen
 schtasks /change /TN NvTmMon_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8} /DISABLE
 schtasks /change /TN NvTmRep_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8} /DISABLE
 schtasks /change /TN NvTmRepOnLogon_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8} /DISABLE
-echo -- Disabling Visual Studio telemetry
+echo.
+echo ============================================================
+echo Deshabilitando Telemetria de Visual Studio
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\VSCommon\14.0\SQM" /v "OptIn" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\VSCommon\15.0\SQM" /v "OptIn" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\VSCommon\16.0\SQM" /v "OptIn" /t REG_DWORD /d 0 /f
@@ -521,13 +728,21 @@ reg delete "HKLM\Software\Microsoft\VisualStudio\DiagnosticsHub" /v "LogLevel" /
 reg add "HKLM\SOFTWARE\Policies\Microsoft\VisualStudio\IntelliCode" /v "DisableRemoteAnalysis" /t "REG_DWORD" /d "1" /f
 reg add "HKCU\SOFTWARE\Microsoft\VSCommon\16.0\IntelliCode" /v "DisableRemoteAnalysis" /t "REG_DWORD" /d "1" /f
 reg add "HKCU\SOFTWARE\Microsoft\VSCommon\17.0\IntelliCode" /v "DisableRemoteAnalysis" /t "REG_DWORD" /d "1" /f
-echo -- Disabling Media Player telemetry
+echo.
+echo ============================================================
+echo Deshabilitando Telemetria de Media Player
+echo ============================================================
+echo.
 reg add "HKCU\SOFTWARE\Microsoft\MediaPlayer\Preferences" /v "UsageTracking" /t REG_DWORD /d 0 /f
 reg add "HKCU\Software\Policies\Microsoft\WindowsMediaPlayer" /v "PreventCDDVDMetadataRetrieval" /t REG_DWORD /d 1 /f
 reg add "HKCU\Software\Policies\Microsoft\WindowsMediaPlayer" /v "PreventMusicFileMetadataRetrieval" /t REG_DWORD /d 1 /f
 reg add "HKCU\Software\Policies\Microsoft\WindowsMediaPlayer" /v "PreventRadioPresetsRetrieval" /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\WMDRM" /v "DisableOnline" /t REG_DWORD /d 1 /f
-echo -- Disabling PowerShell telemetry
+echo.
+echo ============================================================
+echo Deshabilitando Telemetria de PowerShell
+echo ============================================================
+echo.
 setx POWERSHELL_TELEMETRY_OPTOUT 1
 echo -- Disabling CCleaner telemetry
 reg add "HKCU\Software\Piriform\CCleaner" /v "Monitoring" /t REG_DWORD /d 0 /f
@@ -542,27 +757,59 @@ reg add "HKLM\Software\Piriform\CCleaner" /v "(Cfg)QuickCleanIpm" /t REG_DWORD /
 reg add "HKLM\Software\Piriform\CCleaner" /v "(Cfg)GetIpmForTrial" /t REG_DWORD /d 0 /f
 reg add "HKLM\Software\Piriform\CCleaner" /v "(Cfg)SoftwareUpdater" /t REG_DWORD /d 0 /f
 reg add "HKLM\Software\Piriform\CCleaner" /v "(Cfg)SoftwareUpdaterIpm" /t REG_DWORD /d 0 /f
-echo -- Disabling Google updates
+echo.
+echo ============================================================
+echo Deshabilitando actualizaciones automaticas de Google
+echo ============================================================
+echo.
 sc config gupdate start=disabled
 sc config gupdatem start=disabled
-echo -- Disabling Adobe updates
+echo.
+echo ============================================================
+echo Deshabilitando actualizaciones automaticas de Adobe
+echo ============================================================
+echo.
 schtasks /change /TN "\Adobe Acrobat Update Task" /DISABLE > NUL 2>&1
 sc config AdobeARMservice start=disabled
 sc config adobeupdateservice start=disabled
-echo -- Disabling Messaging access
+echo.
+echo ============================================================
+echo Deshabilitando acceso a mensajes
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\chat" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling Notification access
+echo.
+echo ============================================================
+echo Deshabilitando acceso a notificaciones
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userNotificationListener" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling Diagnostics access
+echo.
+echo ============================================================
+echo Deshabilitando acceso a diagnostico
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics" /v "Value" /d "Deny" /t REG_SZ /f
-echo -- Disabling Phone access
+echo.
+echo ============================================================
+echo Deshabilitando acceso a telefono
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsAccessPhone" /t REG_DWORD /d 2 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsAccessPhone_UserInControlOfTheseApps" /t REG_MULTI_SZ /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsAccessPhone_ForceAllowTheseApps" /t REG_MULTI_SZ /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsAccessPhone_ForceDenyTheseApps" /t REG_MULTI_SZ /f
-echo -- Disabling Lock Screen Camera
+echo.
+echo ============================================================
+echo Deshabilitando acceso a camara en pantalla de bloqueo
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Personalization" /v "NoLockScreenCamera" /t REG_DWORD /d 1 /f
-echo -- Disabling and Manual Services
+echo.
+echo ============================================================
+echo Deshabilitando servicios innecesarios
+echo ============================================================
+echo.
 sc config BDESVC start=disabled
 sc config SysMain start=disabled
 sc config AJRouter start=disabled
@@ -768,14 +1015,26 @@ echo -- Showing File Extensions
 
 
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideFileExt" /t REG_DWORD /d 0 /f
-echo -- Disabling Sticky Keys
+echo.
+echo ============================================================
+echo Deshabilitando teclas adhesivas
+echo ============================================================
+echo.
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "58" /f
-echo -- Disabling Taskbar Widgets
+echo.
+echo ============================================================
+echo Deshabilitando Widgets de la barra de tareas
+echo ============================================================
+echo.
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarDa" /t REG_DWORD /d 0 /f
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowTaskViewButton" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v "EnableFeeds" /t REG_DWORD /d 0 /f
-echo -- Disabling Game Bar
+echo.
+echo ============================================================
+echo Deshabilitando Game Bar
+echo ============================================================
+echo.
 reg add "HKLM\SOFTWARE\Polices\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d 0 /f
 reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "UseNexusForGameBarEnabled" /t REG_DWORD /d 0 /f
