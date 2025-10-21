@@ -25,46 +25,11 @@ echo.
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v ColorPrevalence /t REG_DWORD /d 1 /f
-echo.
-echo ============================================================
-echo Habilitando visualizador de imagenes nativo de Windows
-echo ============================================================
-echo.
-rem Determinar ubicación de PhotoViewer.dll
-set "PV=%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll"
-if not exist "%PV%" set "PV=%ProgramFiles(x86)%\Windows Photo Viewer\PhotoViewer.dll"
-
-if not exist "%PV%" (
-    echo No se encontro PhotoViewer.dll. Windows Photo Viewer puede no estar presente.
-) else (
-    rem Registrar comando de apertura
-    reg add "HKCR\PhotoViewer.FileAssoc.Image\shell\open\command" /ve /d "rundll32.exe \"%PV%\", ImageView_Fullscreen %%1" /f
-
-    rem Registrar ProgID (opcional, para compatibilidad)
-    reg add "HKCR\PhotoViewer.FileAssoc.Image" /f
-
-    rem Asociar extensiones al ProgID
-    assoc .jpg=PhotoViewer.FileAssoc.Image
-    assoc .jpeg=PhotoViewer.FileAssoc.Image
-    assoc .png=PhotoViewer.FileAssoc.Image
-    assoc .bmp=PhotoViewer.FileAssoc.Image
-    assoc .gif=PhotoViewer.FileAssoc.Image
-    assoc .tif=PhotoViewer.FileAssoc.Image
-    assoc .tiff=PhotoViewer.FileAssoc.Image
-    assoc .ico=PhotoViewer.FileAssoc.Image
-
-    rem Asegurar ftype con el comando correcto
-    ftype PhotoViewer.FileAssoc.Image="rundll32.exe \"%PV%\", ImageView_Fullscreen %1"
-
-    echo.
-    echo ============================================================
-    echo El vizualizador de imagenes nativo de Windows ha sido habilitado.
-    echo ============================================================
-    echo.
-    ::rem Refrescar el Explorador para aplicar cambios
-    ::taskkill /f /im explorer.exe >nul 2>&1
-    ::start explorer.exe
-)
+reg add "HKCU\SOFTWARE\Microsoft\Windows\DWM" /v AccentColor /t REG_DWORD /d 0 /f
+:: Establecer color de énfasis a gris oscuro (AccentColor y AccentColorInactive)
+powershell -NoProfile -Command ^
+"Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\DWM' -Name AccentColor -Type DWord -Value 0xFF2E2E2E; ^
+Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\DWM' -Name AccentColorInactive -Type DWord -Value 0xFF2E2E2E"
 echo.
 echo ============================================================
 echo Limpiando archivos temporales y cache de navegadores
@@ -1039,6 +1004,7 @@ reg add "HKLM\SOFTWARE\Polices\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t R
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d 0 /f
 reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "UseNexusForGameBarEnabled" /t REG_DWORD /d 0 /f
 reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "ShowStartupPanel" /t REG_DWORD /d 0 /f
+
 :: Pause the script
 pause
 :: Restore previous environment
