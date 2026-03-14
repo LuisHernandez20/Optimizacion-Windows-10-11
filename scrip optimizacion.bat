@@ -19,6 +19,72 @@ echo ============================================================
 echo.
 reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve
 echo.
+echo.
+echo ============================================================
+echo Habilitando opciones avanzadas del sistema
+echo ============================================================
+echo.
+bcdedit /set {current} numproc %NUMBER_OF_PROCESSORS%
+bcdedit /timeout 25
+
+REM deshabilita la animación de la barra de tareas/start menu
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" ^ /v TaskbarAnimations /t REG_DWORD /d 0 /f
+
+REM deshabilita animación al minimizar/maximizar ventanas
+reg add "HKCU\Control Panel\Desktop" /v MinAnimate /t REG_SZ /d 0 /f
+
+REM deshabilita animación de los controlaes y elementos dentro de las ventanas
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^ /v ControlAnimations /t REG_DWORD /d 0 /f
+@REM reg add "HKCU\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d "9012000000000000" /f 
+@REM reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /s
+
+REM deshabilita atenuacion de los elementos despues de hacer click en ellos
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^ /v SelectionFade /t REG_DWORD /d 0 /f
+@REM reg add "HKCU\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d "9012000000000000" /f
+
+REM deshabilita atenuación/deslizamiento de tooltips
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^ /v TooltipAnimation /t REG_DWORD /d 0 /f
+
+REM deshabilita animación/atenuación de menús
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^
+    /v MenuAnimation /t REG_DWORD /d 0 /f
+
+REM deshabilita deslizamiento de cuadros combinados al abrir
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^ /v ComboBoxAnimation /t REG_DWORD /d 0 /f
+
+REM deshabilita vistas previas de miniaturas en la barra de tareas
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" ^ /v TaskbarNoThumbnail /t REG_DWORD /d 1 /f
+
+REM deshabilita Aero Peek (mostrar escritorio con el ratón)
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" ^ /v DisablePreviewDesktop /t REG_DWORD /d 1 /f
+
+REM deshabilita el rectángulo de selección translúcido
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^ /v ListviewAlphaSelect /t REG_DWORD /d 0 /f
+
+REM deshabilita la sombra del puntero del mouse
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^ /v CursorShadow /t REG_DWORD /d 0 /f
+
+rem Mostrar las sombras bajo los menús
+reg add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d 400 /f
+
+rem Mostrar miniaturas en lugar de iconos
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "IconsOnly" /t REG_DWORD /d 0 /f
+
+rem Suavizar los bordes de las fuentes de pantalla
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothing" /t REG_SZ /d 2 /f
+
+@REM rem Mostrar las sombras bajo los punteros del ratón
+@REM reg add "HKCU\Control Panel\Desktop" /v "CursorShadow" /t REG_DWORD /d 1 /f
+
+REM habilita sombras en etiquetas de iconos del escritorio
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" ^ /v ListviewShadow /t REG_DWORD /d 1 /f
+
+
+
+
+@REM wmic pagefileset where name="c:\\pagefile.sys" set InitialSize=2048,MaximumSize=4096
+
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "PagingFiles" /t REG_MULTI_SZ /d "c:\pagefile.sys 1024 15360" /f
 echo ============================================================
 echo Aplicando tema obscuro a Windows y aplicaciones
 echo ============================================================
