@@ -97,6 +97,12 @@ powershell -NoProfile -Command ^
 Set-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\DWM' -Name AccentColorInactive -Type DWord -Value 0xFF2E2E2E"
 echo.
 echo ============================================================
+echo Limpiando carpeta de inicio automatico del usuario actual
+echo ============================================================
+echo.
+del /q /s "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\*.*"
+echo.
+echo ============================================================
 echo Limpiando archivos temporales y cache de navegadores
 echo ============================================================
 echo.
@@ -641,12 +647,33 @@ echo ============================================================
 echo.
 set "hostspath=%windir%\System32\drivers\etc\hosts"
 set "downloadedlist=%temp%\list.txt"
-echo -- Downloading the list of host entries
+
+REM Verificar conexion a internet antes de intentar descargar
+ping -n 1 -w 3000 8.8.8.8 >nul 2>&1
+if %errorlevel% neq 0 (
+    echo -- Sin conexion a internet, omitiendo descarga de lista de Adobe...
+    goto :skipAdobe
+)
+
+echo -- Descargando lista de entradas de hosts...
 curl -s -o "%downloadedlist%" "https://a.dove.isdumb.one/list.txt"
 if not exist "%downloadedlist%" (
-    echo Failed to download the list from the specified URL.
-    exit /b 1
+    echo -- Fallo la descarga de la lista, omitiendo...
+    goto :skipAdobe
 )
+echo.
+echo ============================================================
+echo Las entradas de bloque de Adobe se agregaron correctamente al archivo de hosts
+echo ============================================================
+echo.
+type "%downloadedlist%" >> "%hostspath%"
+del "%downloadedlist%"
+goto :endAdobe
+
+:skipAdobe
+echo -- Seccion de Telemetria de Adobe omitida por falta de conexion.
+
+:endAdobe
 echo.
 echo ============================================================
 echo Las entradas de bloque de Adobe se agregaron correctamente al archivo de hosts
@@ -1071,8 +1098,272 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsActivat
 reg add "HKLM\SOFTWARE\Policies\Microsoft\WindowsStore" /v "DisableStoreApps" /t REG_DWORD /d 1 /f
 reg add "HKLM\SOFTWARE\Policies\Microsoft\WindowsStore" /v "AutoDownload" /t REG_DWORD /d 2 /f
 
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a la cuenta de usuario
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
 
 echo.
+echo ============================================================
+echo Deshabilitando seguimiento de aplicaciones al iniciarse
+echo ============================================================
+echo.
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_TrackProgs" /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_TrackEnabled" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\EdgeUI" /v "DisableMFUTracking" /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoInstrumentation" /t REG_DWORD /d 1 /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoInstrumentation" /t REG_DWORD /d 1 /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a informacion de diagnostico
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appDiagnostics\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando activacion por voz con dispositivo bloqueado
+echo ============================================================
+echo.
+reg add "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v "AgentActivationEnabled" /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v "AgentActivationOnLockScreenEnabled" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsActivateWithVoice" /t REG_DWORD /d 2 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsActivateWithVoiceAboveLock" /t REG_DWORD /d 2 /f
+
+echo.
+echo ============================================================
+echo Deshabilitando aplicacion predeterminada para boton de audifonos
+echo ============================================================
+echo.
+reg add "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v "AgentActivationEnabled" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE" /v "DisableVoice" /t REG_DWORD /d 1 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\WinTrust\Trust Providers\Software Publishing" /v "HeadsetButtonPress" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsAccessHeadset" /t REG_DWORD /d 2 /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a notificaciones
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userNotificationListener" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userNotificationListener" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userNotificationListener\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userNotificationListener\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CurrentVersion\PushNotifications" /v "NoToastApplicationNotification" /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CurrentVersion\PushNotifications" /v "NoToastApplicationNotificationOnLockScreen" /t REG_DWORD /d 1 /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a movimientos
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\motion" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\motion" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\motion\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\motion\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a contactos
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\contacts" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\contacts" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\contacts\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\contacts\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones al calendario
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appointments" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appointments" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appointments\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\appointments\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a llamadas telefonicas
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCall" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCall" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCall\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCall\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCallHistory" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCallHistory" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCallHistory\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\phoneCallHistory\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones al correo electronico
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\email\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a las tareas
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userDataTasks" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userDataTasks" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userDataTasks\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userDataTasks\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a los mensajes
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\chat" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\chat" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\chat\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\chat\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a los radios
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\radios" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\radios" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\radios\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\radios\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a dispositivos no emparejados
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\bluetoothSync" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\bluetoothSync" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\bluetoothSync\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\bluetoothSync\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a los documentos
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a las imagenes
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a los videos
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones al sistema de archivos
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a tecnologia inalambrica
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\wifiData" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\wifiData" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\wifiData\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\wifiData\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones al seguimiento ocular
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\gazeInput" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\gazeInput" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\gazeInput\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\gazeInput\NonPackaged" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando capacidad de aplicaciones para tomar capturas
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\screenCapture" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\screenCapture" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a la biblioteca de musica
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\musicLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\musicLibrary" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando acceso de aplicaciones a la carpeta de descargas
+echo ============================================================
+echo.
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\downloadsFolder" /v "Value" /t REG_SZ /d "Deny" /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\downloadsFolder" /v "Value" /t REG_SZ /d "Deny" /f
+
+echo.
+echo ============================================================
+echo Deshabilitando ejecucion de aplicaciones en segundo plano
+echo ============================================================
+echo.
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 1 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "BackgroundAppGlobalToggle" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsRunInBackground" /t REG_DWORD /d 2 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "BackgroundAppGlobalToggle" /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "BackgroundAppGlobalToggleLevelUser" /t REG_DWORD /d 0 /f
+
+
+
+
+:: Pause the script
+pause
+:: Restore previous environment
+endlocal
+:: Hemos finalizado el proceso, gracias por tu paciencia, Hecho por Luis Hernandez (TechCode, 5620648883, estamos para servirte)
+
+
+
+
+
 :: Pause the script
 pause
 :: Restore previous environment
